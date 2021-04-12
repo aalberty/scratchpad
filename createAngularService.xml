@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<unload unload_date="2021-04-12 13:48:22">
+<sp_widget action="INSERT_OR_UPDATE">
+<category>custom</category>
+<client_script><![CDATA[api.controller=function() {
+  /* widget controller */
+  var c = this;
+	console.log(c.data);
+	c.saveAndContinue = saveAndContinue;
+	c.back = back;
+	c.checkName = checkName;
+	c.currentStep = 0;
+	c.type = "directive"; //initial type so it doesn't make an empty one
+	c.name = "";
+	c.validName = undefined;
+	c.savedSuccessfully = undefined;
+	c.savedHtml = "";
+	c.saveButtonText = [
+		"Next",
+		"Save"
+	];
+	var finalStep = 1;
+	
+	function back(){
+		if(c.currentStep == 0){
+			return;
+		}
+		c.currentStep--;
+	}
+	
+	function saveAndContinue(){
+		c.savedSuccessfully = undefined;
+		if(c.currentStep != finalStep){
+			c.currentStep++;
+		} else {
+			var input = {
+				"action": "save",
+				"name": c.name,
+				"type": c.type,
+				"linkedWidgets": c.data.rightBucketOptions
+			};
+			
+			c.server.get(input).then(function(res){
+				if(res && res.data && res.data.saveResult != undefined){
+					c.savedHtml = "Your <a src='/nav_to.do?uri=%2Fsp_angular_provider_list.do%3Fsys_id%3D" + res.data.saveResult + "' target='_blank'>angular provider</a> was successfully created.";
+					c.savedSuccessfully = true;
+				}
+			});
+		}
+	}
+	
+	function checkName(text){
+		//finicky ui stuff: dont insta update alert,
+		// but don't keep the red outline around if you haven't
+		// tested it yet
+		if(c.validName === false){
+			c.validName = undefined;
+		}
+		
+		
+		var input = {
+			"action": "checkName",
+			"name": text
+		};
+		c.server.get(input).then(function(res){
+			console.log(res);
+			if(res && res.data && res.data.validName != undefined){
+				c.validName = res.data.validName;
+				console.log("Model update?: ",	c.validName);
+			}
+		});
+	}
+};]]></client_script>
+<controller_as>c</controller_as>
+<css>.widget-top-container{
+	height: 390px;
+}
+
+.input-container{
+	display: flex;
+  flex-flow: row;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 10px;
+}
+
+.input-container &gt; label{
+	padding-right: 15px;
+	color: black;
+  width: 75px;
+}
+
+.red-outline{
+	border: 1px solid #ff726f;
+}
+
+.red-outline:focus{
+	outline: 5px auto #ff726f;
+}
+
+textarea{
+	resize: none;
+}
+
+.button-container{
+  position: absolute;
+	bottom: 0;
+  right: 15px;
+}
+
+.button-container:first-child{
+	margin-left: auto;
+}
+
+.button-container &gt; button{
+	width: 100px;
+}</css>
+<data_table>sp_instance</data_table>
+<demo_data/>
+<description/>
+<docs display_value=""/>
+<field_list/>
+<has_preview>true</has_preview>
+<id>create_linked_angular_provider</id>
+<internal>false</internal>
+<link><![CDATA[function link(scope, element, attrs, controller) {  }]]></link>
+<name>Create Linked Angular Provider</name>
+<option_schema/>
+<public>false</public>
+<roles/>
+<script><![CDATA[(function() {
+  /* populate the 'data' object */
+  /* e.g., data.table = $sp.getValue('table'); */
+	data.slushBucketOptions = {};
+	
+	var gr = new GlideRecord("sp_widget");
+	gr.query();
+	data.slushBucketOptions.leftBucketOptions = [];
+	data.slushBucketOptions.rightBucketOptions = [];
+	while(gr.next()){
+		data.slushBucketOptions.leftBucketOptions.push({
+			"name": gr.getValue("name"),
+			"sys_id": gr.getUniqueValue()
+		});
+	}
+	
+	data.slushBucket = $sp.getWidget("slush_bucket", data.slushBucketOptions);
+
+	//get scope
+	data.currentScope = {};
+	data.currentScope.scopeName = gs.getCurrentApplicationId();
+	var scopeGr = new GlideRecord("sys_scope");
+	scopeGr.addEncodedQuery("scope=" + data.currentScope.scopeName);
+	scopeGr.query();
+	if(scopeGr.next()){
+		data.currentScope.sys_id = scopeGr.getUniqueValue();
+	}
+	
+	//get existing angular providers to check against user name input
+	var apGr = new GlideRecord("sp_angular_provider");
+	apGr.query();
+	var apNames = [];
+	while(apGr.next()){
+		apNames.push(apGr.getValue("name"));
+	}
+	
+	if(input && input.action == "save"){
+		var serviceGr = new GlideRecord("sp_angular_provider");
+		serviceGr.initialize();
+		serviceGr.setValue("name", input.name);
+		serviceGr.setValue("type", input.type);
+		serviceGr.setValue("sys_scope", data.currentScope.sys_id);
+		var serviceId = serviceGr.insert();
+		//m2m records: m2m_sp_ng_pro_sp_widget
+		if(input.linkedWidgets.length && input.linkedWidgets.length > 0){
+			var m2mGr = new GlideRecord("m2m_sp_ng_pro_sp_widget");
+			for(var i = 0; i < input.linkedWidgets.length; i++){
+				m2mGr.initialize();
+				m2mGr.setValue("sp_angular_provider", serviceId);
+				m2mGr.setValue("sys_scope", data.currentScope.sys_id);
+				m2mGr.setValue("sp_widget", input.linkedWidgets[i].sys_id);
+				m2mGr.insert();
+				data.saveResult = serviceId;
+			}
+		}
+	}
+	
+	if(input && input.action == "checkName"){
+		data.validName = apNames.indexOf(input.name) == -1;
+	}
+
+})();]]></script>
+<servicenow>false</servicenow>
+<sys_class_name>sp_widget</sys_class_name>
+<sys_created_by>aalberty@itsdelivers.com</sys_created_by>
+<sys_created_on>2021-03-18 18:18:42</sys_created_on>
+<sys_id>4962c50f2f076010125ad5ccf699b6cc</sys_id>
+<sys_mod_count>116</sys_mod_count>
+<sys_name>Create Linked Angular Provider</sys_name>
+<sys_package display_value="Global" source="global">global</sys_package>
+<sys_policy/>
+<sys_scope display_value="Global">global</sys_scope>
+<sys_update_name>sp_widget_4962c50f2f076010125ad5ccf699b6cc</sys_update_name>
+<sys_updated_by>aalberty@itsdelivers.com</sys_updated_by>
+<sys_updated_on>2021-03-30 14:08:36</sys_updated_on>
+<template><![CDATA[<div class="widget-top-container">
+<!-- your widget template -->
+  
+  <div class="record-info-container" ng-show="c.currentStep == 0">
+    
+    <div class="input-container type-container">
+      <label for="typeSelector">Type</label>
+      <select id="typeSelector" 
+              class="form-control" 
+              ng-model="c.type">
+        <option value="directive">Directive</option>
+        <option value="factory">Factory</option>
+        <option value="service">Service</option>
+      </select>
+    </div>
+    
+    <div class="input-container name-container">
+      <label for="nameField">Name</label>
+      <textarea id="nameField" 
+                class="form-control" 
+                maxlength="100" 
+                cols="100" 
+                rows="1"
+                ng-model="c.name"
+                ng-class="{'red-outline': c.name=='' || c.validName==false || c.validName==undefined}"
+                ng-change="c.checkName(c.name);"
+                ng-model-options="{ debounce: 500 }"></textarea>
+    </div>
+    
+    <div class="input-container scope-container">
+      <label for="scopeField">Scope</label>
+      <textarea id="scopeField" 
+                class="form-control" 
+                maxlength="100" 
+                cols="100" 
+                rows="1"
+                readonly="true">{{c.data.currentScope.scopeName}}</textarea>
+    </div>
+    
+    <div class="alert alert-danger" ng-show="c.name!='' && c.validName==false">
+    	Error: There is already an angular provider record with the name {{c.name}}.
+    </div>
+    
+    
+    
+  </div>
+  
+  
+  <div class="target-widgets-container" ng-show="c.currentStep == 1">
+  	<sp-widget widget="data.slushBucket"></sp-widget>
+    <div class="alert"
+         ng-class="{'alert-info': c.savedSuccessfully == true}"
+         ng-show="c.savedSuccessfully!=undefined"
+         ng-bind-html="c.savedHtml"></div>
+  </div>
+  
+  
+  <div class="button-container">
+    
+  	<button class="btn btn-danger" 
+            type="button" 
+            ng-click="c.back()"
+            ng-show="c.currentStep!=0">Back</button>
+  	<button class="btn btn-primary" 
+            type="button" 
+            ng-click="c.saveAndContinue()"
+            ng-disabled="c.name=='' || c.validName==false || c.validName == undefined || c.savedSuccessfully!=undefined">
+      {{c.saveButtonText[c.currentStep]}}
+    </button>
+  
+  </div>
+  
+</div>]]></template>
+</sp_widget>
+</unload>
