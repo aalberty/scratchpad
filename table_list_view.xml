@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<unload unload_date="2021-04-12 19:57:09">
+<sp_widget action="INSERT_OR_UPDATE">
+<category>custom</category>
+<client_script><![CDATA[api.controller=function() {
+  /* widget controller */
+  var c = this;
+	/*
+		In c.options, expect a data structure like the following
+		
+		list_options = {
+			table: <table_name>,
+			display_fields: [field1, field2,...],
+			encoded_query: <encoded_query>
+		}
+		
+		sample input:
+		
+		c.options.list_options = {
+			table: "incident",
+			display_fields: ["short_description", "number", "state"],
+			encoded_query: "priority=3",
+			show_filters: true
+		};
+	*/
+	
+	c.options.list_options = {
+		table: "incident",
+		display_fields: ["number", "short_description", "state"],
+		encoded_query: "priority=3",
+		show_filters: true
+	};
+	
+	
+	init();
+	
+	function init(){
+		var input = {
+			"action": "init",
+			"data": c.options.list_options
+		};
+		
+		c.server.get(input).then(function(res){
+			console.log(res);
+			if(res && res.data){
+				console.log(res.data);
+				c.options.list_options.processed_display_fields = res.data.processed_display_fields;
+				c.options.list_options.records = res.data.records;
+			}
+		});
+	}
+};]]></client_script>
+<controller_as>c</controller_as>
+<css>tr.odd{
+	background-color: #c5dbcf;
+}
+
+table, th , td {
+  border-top: 1px solid grey;
+  border-bottom: 1px solid grey;
+  border-collapse: collapse;
+  padding: 5px;
+  color: black;
+}
+
+table{
+	border-left: 1px solid gray;
+  border-right: 1px solid gray;
+}</css>
+<data_table>sp_instance</data_table>
+<demo_data/>
+<description>Take a table name and query params, output a table for front end</description>
+<docs display_value=""/>
+<field_list/>
+<has_preview>true</has_preview>
+<id/>
+<internal>false</internal>
+<link><![CDATA[function link(scope, element, attrs, controller) {
+  
+}]]></link>
+<name>TableListView</name>
+<option_schema/>
+<public>false</public>
+<roles/>
+<script><![CDATA[(function() {
+  /* populate the 'data' object */
+  /* e.g., data.table = $sp.getValue('table'); */
+
+	
+	if(input){
+		if(input.action == "init"){
+			var gr = new GlideRecord(input.data.table);
+			if(input.data.encoded_query){
+				gr.addEncodedQuery(input.data.encoded_query);
+			}
+			gr.query();
+			data.records = [];
+			while(gr.next()){
+				var temp = {};
+				for(var i = 0; i < input.data.display_fields.length; i++){
+					if(input.data.display_fields.length == 'sys_id'){
+						temp.sys_id = gr.getUniqueValue();
+					} else {
+						temp[input.data.display_fields[i]] = gr.getValue(input.data.display_fields[i]);
+					}
+				}
+				data.records.push(temp);
+			}
+			
+			//get display names for target fields
+			data.processed_display_fields = [];
+			for(var i = 0; i < input.data.display_fields.length; i++){
+				var temp = {
+					name: input.data.display_fields[i],
+					displayName: ""
+				};
+				var field = gr.getElement(input.data.display_fields[i]);
+				var displayName = field.getLabel();
+				temp.displayName = displayName;
+				data.processed_display_fields.push(temp);
+			}
+			
+		}
+	}
+})();]]></script>
+<servicenow>false</servicenow>
+<sys_class_name>sp_widget</sys_class_name>
+<sys_created_by>aalberty@itsdelivers.com</sys_created_by>
+<sys_created_on>2021-04-12 16:34:57</sys_created_on>
+<sys_id>11d3c0e42fa32010125ad5ccf699b69d</sys_id>
+<sys_mod_count>88</sys_mod_count>
+<sys_name>TableListView</sys_name>
+<sys_package display_value="Global" source="global">global</sys_package>
+<sys_policy/>
+<sys_scope display_value="Global">global</sys_scope>
+<sys_update_name>sp_widget_11d3c0e42fa32010125ad5ccf699b69d</sys_update_name>
+<sys_updated_by>aalberty@itsdelivers.com</sys_updated_by>
+<sys_updated_on>2021-04-12 19:53:58</sys_updated_on>
+<template><![CDATA[<div>
+<!-- your widget template -->
+  
+  <table class="table table-hover">
+    <tr ng-show="c.options.list_options.show_filters == true">
+    	<td ng-repeat="field in c.options.list_options.processed_display_fields">
+      	<input class="form-control" 
+               placeholder={{field.displayName}}
+               ng-model="c.search[field.name]">
+      </td>
+    </tr>
+    <tr>
+      <th ng-repeat="field in c.options.list_options.processed_display_fields">
+      	{{field.displayName}}
+      </th>
+    </tr>
+    
+    <tr ng-repeat="record in c.options.list_options.records | filter : c.search"
+        ng-class-odd="'odd'">
+      <td ng-repeat="field in c.options.list_options.processed_display_fields">
+        {{record[field.name]}}
+      </td>
+    </tr>
+  </table>
+</div>]]></template>
+</sp_widget>
+</unload>
