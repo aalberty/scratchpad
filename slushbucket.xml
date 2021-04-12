@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<unload unload_date="2021-04-12 13:39:31">
+<sp_widget action="INSERT_OR_UPDATE">
+<category>custom</category>
+<client_script><![CDATA[api.controller=function($scope) {
+  /* widget controller */
+  var c = this;
+	c.focus = giveFocus;
+	c.swapFromLeftToRight = swapFromLeftToRight;
+	c.swapFromRightToLeft = swapFromRightToLeft;
+	c.rightSelect = "";
+	c.leftSelect = "";
+	c.focusedRow = {"side": "", "rowNum": "", "selected": ""};
+	
+	
+	function giveFocus(side, rowNum, option){
+		c.focusedRow.side = side;
+		c.focusedRow.rowNum = rowNum + '';
+		c.focusedRow.selected = option;
+		console.log(c.focusedRow);
+	}
+	
+	function swapFromLeftToRight(){
+		for(var i = 0; i < c.leftSelect.length; i++){
+			c.options.leftBucketOptions.splice(c.options.leftBucketOptions.indexOf(c.leftSelect[i]), 1);
+			c.options.rightBucketOptions.push(c.leftSelect[i]);
+		}
+		c.leftSelect = "";
+		c.rightSelect = "";
+	}
+	
+	function swapFromRightToLeft(){
+		for(var i = 0; i < c.rightSelect.length; i++){
+			c.options.rightBucketOptions.splice(c.options.rightBucketOptions.indexOf(c.rightSelect[i]), 1);
+			c.options.leftBucketOptions.push(c.rightSelect[i]);
+		}
+		c.leftSelect = "";
+		c.rightSelect = "";
+	}
+};]]></client_script>
+<controller_as>c</controller_as>
+<css>.parent-container{
+	display: flex;
+  flex-flow: row;
+  height: 300px;
+}
+
+.left-col{
+  display: flex;
+  flex-flow: column;
+	width: 47%;
+}
+
+.right-col{
+  display: flex;
+  flex-flow: column;
+	width: 47%;
+}
+
+.bucket-controls{
+	width: 6%;
+}
+
+label{
+  text-align: center;
+  color: black;
+  font-weight: 600;
+}
+
+.bucket{
+	border: 1px solid Gainsboro;
+  border-radius: 3px;
+  height: 250px;
+  width: 75%;
+  margin: auto;
+  margin-top: 0;
+  overflow-y: scroll;
+}
+
+.bucket-controls{
+	display: flex;
+  flex-flow: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.bucket-controls &gt; div{
+	border: 1px solid Gainsboro;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+i.fa{
+	color: black;
+  font-weight: 500;
+  font-size: 24px;
+}
+
+.fa-angle-left{
+	position: relative;
+  left: -2px;
+}
+
+option:hover{
+	cursor: pointer;
+  background-color: #03A9F4;
+  color: white;
+}
+</css>
+<data_table>sp_instance</data_table>
+<demo_data/>
+<description/>
+<docs display_value=""/>
+<field_list/>
+<has_preview>true</has_preview>
+<id>slush_bucket</id>
+<internal>false</internal>
+<link><![CDATA[function link(scope, element, attrs, controller) {  }]]></link>
+<name>Slush Bucket</name>
+<option_schema>[{"hint":"Table that you would like the available slush bucket to have entries from","name":"available_table","section":"other","label":"Available Table","type":"string"},{"hint":"Query to apply to the available table","name":"available_table_query","section":"other","label":"Available Table Query","type":"string"},{"hint":"Table you would like to pull values from for the selected bucket","name":"selected_table","section":"other","label":"Selected Table","type":"string"},{"hint":"Query to apply to the selected table","name":"selected_table_query","section":"other","label":"Selected Table Query","type":"string"}]</option_schema>
+<public>false</public>
+<roles/>
+<script><![CDATA[(function() {
+  /* populate the 'data' object */
+  /* e.g., data.table = $sp.getValue('table'); */
+	
+	
+	
+})();]]></script>
+<servicenow>false</servicenow>
+<sys_class_name>sp_widget</sys_class_name>
+<sys_created_by>aalberty@itsdelivers.com</sys_created_by>
+<sys_created_on>2021-03-18 19:00:06</sys_created_on>
+<sys_id>8962c50f2f076010125ad5ccf699b6cc</sys_id>
+<sys_mod_count>122</sys_mod_count>
+<sys_name>Slush Bucket</sys_name>
+<sys_package display_value="Global" source="global">global</sys_package>
+<sys_policy/>
+<sys_scope display_value="Global">global</sys_scope>
+<sys_update_name>sp_widget_8962c50f2f076010125ad5ccf699b6cc</sys_update_name>
+<sys_updated_by>aalberty@itsdelivers.com</sys_updated_by>
+<sys_updated_on>2021-03-25 19:44:34</sys_updated_on>
+<template><![CDATA[<div class="parent-container">
+  
+  <div class="left-col">
+    
+  	<label>Available</label>
+    
+    
+    
+    <select class="bucket left-bucket" multiple
+            ng-options="option.name for option in c.options.leftBucketOptions | orderBy: 'name'"
+            ng-model="c.leftSelect"
+            ng-dblclick="c.swapFromLeftToRight()">
+    </select>
+    
+  </div>
+
+  <div class="bucket-controls">
+    
+    <div ng-click="c.swapFromLeftToRight()"><i class="fa fa-angle-right"/></div>
+    <div ng-click="c.swapFromRightToLeft()"><i class="fa fa-angle-left"/></div>
+  </div>
+  
+  <div class="right-col">
+    
+    <label>Selected</label>
+    
+    
+    
+    <select class="bucket right-bucket" multiple
+            ng-options="option.name for option in c.options.rightBucketOptions | orderBy: 'name'"
+            ng-model="c.rightSelect"
+            ng-dblclick="c.swapFromRightToLeft()">
+      
+    </select>
+    
+  </div>
+
+</div>]]></template>
+</sp_widget>
+</unload>
